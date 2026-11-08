@@ -6,6 +6,17 @@ power panel leaves out.
 
 Made for Omarchy on Asahi Linux (Arch Linux ARM, `aarch64`).
 
+## Install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/RobbieUK1/apple-silicon-power/main/install.sh | bash
+```
+
+That one line clones the plugin into `~/.config/omarchy/plugins/robbie.apple-silicon-power`,
+has the shell rescan its plugins, and puts the widget on the bar. Re-run the same
+line to update, then restart the shell (`omarchy-restart-shell`) if a change does
+not appear.
+
 ## What it shows
 
 Click the bar icon for the full panel:
@@ -38,22 +49,17 @@ panel is open. Keyboard navigation works on the power-profile row.
 - `omarchy-battery-charge-limit` and `omarchy-powerprofiles-set` (both ship with
   Omarchy)
 
-## Install
+## Manual install
 
 ```bash
 git clone https://github.com/RobbieUK1/apple-silicon-power \
   ~/.config/omarchy/plugins/robbie.apple-silicon-power
 
 omarchy-shell shell rescanPlugins
-```
-
-Then add the widget to your bar. Either run:
-
-```bash
 omarchy bar put robbie.apple-silicon-power --before omarchy.power
 ```
 
-or place it by hand in `~/.config/omarchy/shell.json` under the right bar
+Or place it by hand in `~/.config/omarchy/shell.json` under the right bar
 section:
 
 ```json
@@ -106,6 +112,7 @@ regular and low power, that is the daemon reporting what the kernel exposes.
 
 | File | Purpose |
 |------|---------|
+| `install.sh` | One-line installer and updater |
 | `Panel.qml` | Bar button, keyboard panel, and all layout |
 | `battery.py` | Reads `macsmc` telemetry from sysfs and prints JSON |
 | `Battery.js` | Parsing, icon, and profile helpers |
