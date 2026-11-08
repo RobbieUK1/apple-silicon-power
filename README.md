@@ -91,6 +91,12 @@ Only the values Omarchy's helper supports are offered: `80%` (charging restarts
 at 75%) and `100%`. Keeping to those values means the limit is saved with the
 same mechanism as `omarchy battery charge limit`, so it survives a reboot.
 
+The saved choice is restored when Linux starts. This does not guarantee that
+the firmware enforces the limit while the laptop is fully powered off.
+If your Mac charges above 80% after shutdown, this widget cannot prevent it
+through the supported Linux charge-threshold interface. Sleep and shutdown
+are different states; powered-off behaviour needs testing on each firmware.
+
 ## Power profiles on Apple Silicon
 
 The profile picker shows whatever power-profiles-daemon reports for the machine,
@@ -119,6 +125,19 @@ regular and low power, that is the daemon reporting what the kernel exposes.
 | `set-charge-limit.sh` | Privilege-aware wrapper around the Omarchy helper |
 | `i18n/en.json` | Display strings |
 | `manifest.json` | Plugin manifest |
+
+## Checks
+
+Run the regression checks without changing any system settings:
+
+```bash
+python3 -m unittest discover -s tests -v
+node tests/test_helpers.js
+bash -n install.sh set-charge-limit.sh
+```
+
+The Python checks use temporary battery readings and a stub Git command.
+The JavaScript checks cover the icon and the panel's data handlers.
 
 ## License
 

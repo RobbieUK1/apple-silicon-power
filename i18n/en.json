@@ -4,7 +4,7 @@
   "statusCharging": "Charging",
   "statusDischarging": "Discharging",
   "statusFull": "Fully charged",
-  "statusHolding": "Holding at %1%",
+  "statusHolding": "Charging paused · %1% limit",
   "statusIdle": "Not charging",
   "time": "Time",
   "timeLeft": "Time left",
@@ -33,5 +33,9 @@
   "profilePerformance": "Performance",
   "durationHours": "%1 h",
   "durationMinutes": "%1 min",
-  "durationHoursMinutes": "%1 h %2 min"
+  "durationHoursMinutes": "%1 h %2 min",
+  "batteryUnavailable": "Battery readings unavailable",
+  "batteryAbsent": "No battery detected",
+  "profilesUnavailable": "Power profiles unavailable",
+  "profileFailed": "Could not change the power profile."
 }

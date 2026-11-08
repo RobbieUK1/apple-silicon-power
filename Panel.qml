@@ -18,16 +18,19 @@ Panel {
   property bool cursorActive: false
   property bool thresholdBusy: false
   property string thresholdError: ""
+  property bool batteryReadFailed: false
+  property string profileReadError: ""
+  property string profileActionError: ""
 
   readonly property bool present: info.present !== false
   readonly property bool haveData: info.present === true
   readonly property int percentage: info.percentage === undefined || info.percentage === null ? -1 : Number(info.percentage)
-  readonly property string state: String(info.state || "")
+  readonly property string batteryState: String(info.state || "")
   readonly property bool acOnline: info.acOnline === true
-  readonly property bool discharging: haveData && state === "discharging" && !acOnline
+  readonly property bool discharging: haveData && batteryState === "discharging"
   readonly property bool holding: haveData && info.holding === true
-  readonly property bool charging: haveData && acOnline && (state === "charging" || state === "pending-charge") && !holding
-  readonly property bool full: haveData && (state === "full" || (acOnline && percentage >= 100))
+  readonly property bool charging: haveData && acOnline && (batteryState === "charging" || batteryState === "pending-charge") && !holding
+  readonly property bool full: haveData && (batteryState === "full" || (acOnline && percentage >= 100))
   readonly property bool healthKnown: info.healthPercent !== undefined && info.healthPercent !== null
   readonly property real healthPercent: healthKnown ? Math.max(0, Math.min(100, Number(info.healthPercent))) : 0
   readonly property int thresholdEnd: info.thresholdEnd === undefined || info.thresholdEnd === null ? -1 : Number(info.thresholdEnd)
@@ -36,7 +39,7 @@ Panel {
   readonly property bool showPercentage: setting("showPercentage", true) === true
   readonly property string fontFamily: bar ? bar.fontFamily : Style.font.family
   readonly property color fg: bar ? bar.foreground : Color.foreground
-  readonly property string limitScript: Qt.resolvedUrl("set-charge-limit.sh").toString().replace(/^file:\/\//, "")
+  readonly property string limitScript: decodeURIComponent(Qt.resolvedUrl("set-charge-limit.sh").toString().replace(/^file:\/\//, ""))
 
   readonly property real batteryFraction: percentage < 0 ? 0 : Math.max(0, Math.min(1, percentage / 100))
   readonly property color healthColor: healthPercent >= 80 ? Color.accent : (healthPercent >= 60 ? root.fg : Color.urgent)
@@ -55,6 +58,8 @@ Panel {
   }
 
   function statusLabel() {
+    if (root.batteryReadFailed) return strings.t("batteryUnavailable")
+    if (root.info.present === false) return strings.t("batteryAbsent")
     if (!root.haveData) return strings.t("loading")
     if (root.holding) return strings.t("statusHolding").arg(root.n(root.thresholdEnd))
     if (root.full) return strings.t("statusFull")
@@ -95,6 +100,8 @@ Panel {
     return strings.t("limitFullNote")
   }
   readonly property string tooltipText: {
+    if (root.batteryReadFailed) return strings.t("batteryUnavailable")
+    if (root.info.present === false) return strings.t("batteryAbsent")
     if (!root.haveData) return strings.t("loading")
     var parts = [root.percentageText, root.statusLabel()]
     if (root.timeValue !== "—") parts.push(root.timeValue)
@@ -105,29 +112,38 @@ Panel {
 
   function acceptInfo(raw) {
     var data = Battery.parse(raw)
-    if (!data || data.present === undefined) return
-    info = data
+    batteryReadFailed = typeof data.present !== "boolean"
+    info = batteryReadFailed ? ({}) : data
   }
 
   function acceptProfiles(raw) {
     var parsed = Battery.parseProfiles(raw)
-    if (parsed.profiles.length === 0) return
+    profileReadError = parsed.profiles.length === 0 ? strings.t("profilesUnavailable") : ""
     profiles = parsed.profiles
     activeProfile = parsed.activeProfile
     var idx = profiles.indexOf(activeProfile)
     if (idx >= 0 && !cursorActive) profileIndex = idx
+    else profileIndex = Battery.selectProfileIndex(profileIndex, 0, profiles.length)
   }
 
   function refresh() {
-    if (!batteryProc.running) batteryProc.running = true
+    if (!batteryProc.running) {
+      batteryProc.completed = false
+      batteryProc.running = true
+    }
   }
 
   function refreshProfiles() {
-    if (!profilesProc.running) profilesProc.running = true
+    if (!profilesProc.running) {
+      profilesProc.completed = false
+      profilesProc.running = true
+    }
   }
 
   function setProfile(name) {
-    if (!name || profileProc.running) return
+    if (profiles.indexOf(name) < 0 || profileProc.running) return
+    profileActionError = ""
+    profileProc.completed = false
     profileProc.command = ["omarchy-powerprofiles-set", "autodetect", String(name)]
     profileProc.running = true
   }
@@ -144,6 +160,7 @@ Panel {
   function setChargeLimit(limit) {
     if (thresholdBusy || !thresholdSupported) return
     thresholdError = ""
+    thresholdProc.completed = false
     thresholdProc.command = [root.limitScript, String(limit)]
     thresholdProc.running = true
   }
@@ -157,7 +174,7 @@ Panel {
     if (opened) {
       refresh()
       refreshProfiles()
-      var idx = profiles.indexOf(activeProfile)
+      const idx = profiles.indexOf(activeProfile)
       profileIndex = idx >= 0 ? idx : 0
       cursorActive = false
       thresholdError = ""
@@ -166,37 +183,76 @@ Panel {
 
   Process {
     id: batteryProc
-    command: ["python3", Qt.resolvedUrl("battery.py").toString().replace(/^file:\/\//, "")]
-    stdout: StdioCollector {
-      waitForEnd: true
-      onStreamFinished: root.acceptInfo(text)
+    property bool completed: true
+    command: ["python3", decodeURIComponent(Qt.resolvedUrl("battery.py").toString().replace(/^file:\/\//, ""))]
+    stdout: StdioCollector { id: batteryOutput; waitForEnd: true }
+    onExited: function(exitCode, exitStatus) {
+      completed = true
+      root.acceptInfo(exitCode === 0 && exitStatus === 0 ? batteryOutput.text : "")
+    }
+    onRunningChanged: {
+      if (!running && !completed) root.acceptInfo("")
     }
   }
 
   Process {
     id: profilesProc
+    property bool completed: true
     command: ["omarchy-powerprofiles-list", "--active-state"]
-    stdout: StdioCollector {
-      waitForEnd: true
-      onStreamFinished: root.acceptProfiles(text)
+    stdout: StdioCollector { id: profilesOutput; waitForEnd: true }
+    onExited: function(exitCode, exitStatus) {
+      completed = true
+      root.acceptProfiles(exitCode === 0 && exitStatus === 0 ? profilesOutput.text : "")
+    }
+    onRunningChanged: {
+      if (!running && !completed) root.acceptProfiles("")
     }
   }
 
   Process {
     id: profileProc
-    onExited: {
+    property bool completed: true
+    onExited: function(exitCode, exitStatus) {
+      completed = true
+      root.profileActionError = exitCode === 0 && exitStatus === 0 ? "" : strings.t("profileFailed")
       root.refreshProfiles()
       root.refresh()
+    }
+    onRunningChanged: {
+      if (!running && !completed) root.profileActionError = strings.t("profileFailed")
     }
   }
 
   Process {
     id: thresholdProc
-    onRunningChanged: root.thresholdBusy = running
-    onExited: {
-      if (exitCode !== 0) root.thresholdError = strings.t("limitFailed")
-      else root.thresholdError = ""
+    property bool completed: true
+    onRunningChanged: {
+      root.thresholdBusy = running
+      if (!running && !completed) root.thresholdError = strings.t("limitFailed")
+    }
+    onExited: function(exitCode, exitStatus) {
+      completed = true
+      root.thresholdError = exitCode === 0 && exitStatus === 0 ? "" : strings.t("limitFailed")
       root.refresh()
+    }
+  }
+
+  // Bound read duration so a stuck helper cannot leave old telemetry visible.
+  Timer {
+    interval: 10000
+    running: batteryProc.running
+    onTriggered: {
+      root.acceptInfo("")
+      batteryProc.signal(9)
+    }
+  }
+
+  Timer {
+    interval: 10000
+    running: profilesProc.running
+    onTriggered: {
+      root.acceptProfiles("")
+      profilesProc.signal(9)
     }
   }
 
@@ -581,6 +637,17 @@ Panel {
             fontFamily: root.fontFamily
           }
 
+          Text {
+            textFormat: Text.PlainText
+            visible: text !== ""
+            text: root.profileActionError || root.profileReadError
+            color: Color.urgent
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.caption
+            wrapMode: Text.WordWrap
+            width: parent.width
+          }
+
           Row {
             id: profileRow
             width: parent.width
@@ -607,6 +674,7 @@ Panel {
                 bordered: true
                 active: root.activeProfile === modelData
                 hasCursor: root.cursorActive && root.profileIndex === index
+                enabled: !profileProc.running
                 onClicked: root.setProfile(modelData)
                 onHovered: function(hovered) {
                   if (hovered) {

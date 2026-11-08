@@ -5,6 +5,7 @@
 import glob
 import json
 import os
+import math
 
 POWER_SUPPLY = os.environ.get("OMARCHY_POWER_SUPPLY_PATH", "/sys/class/power_supply")
 
@@ -22,7 +23,8 @@ def read_number(path):
     if text is None:
         return None
     try:
-        return float(text)
+        value = float(text)
+        return value if math.isfinite(value) else None
     except ValueError:
         return None
 
@@ -113,12 +115,13 @@ def read_battery(directory):
 
     on_ac = ac_online()
     threshold = threshold_end if threshold_end else 100
+    restart = threshold_start if threshold_start is not None else threshold
     holding = bool(
         on_ac
         and threshold < 100
         and percentage is not None
-        and percentage >= threshold
-        and status != "discharging"
+        and (percentage >= threshold or percentage > restart)
+        and status in ("not charging", "full")
     )
 
     # Time left uses the same instantaneous rate shown beside it, so the two
@@ -127,7 +130,7 @@ def read_battery(directory):
     time_minutes = None
     time_direction = "none"
     if power_w is not None and power_w > 0.2 and energy_now is not None:
-        if status == "discharging" and not on_ac:
+        if status == "discharging":
             time_minutes = energy_now / power_w * 60.0
             time_direction = "left"
         elif on_ac and status in ("charging", "pending-charge") and not holding and energy_full:

@@ -12,6 +12,7 @@ function clamp(value, low, high) {
 }
 
 function batteryIcon(data, charging) {
+  if (!data || data.percentage === null || data.percentage === undefined) return "󰂑"
   var percentage = Number(data && data.percentage)
   if (!isFinite(percentage) || percentage < 0) return "󰂑"
 

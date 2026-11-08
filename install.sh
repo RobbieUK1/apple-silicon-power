@@ -21,7 +21,8 @@ command -v git >/dev/null || {
 if [[ -d $dest/.git ]]; then
   echo "Updating $plugin_id"
   if ! git -C "$dest" pull --ff-only --quiet; then
-    echo "Could not fast-forward $dest; keeping the checkout as it is." >&2
+    echo "Update failed for $dest; resolve the Git error and re-run the installer." >&2
+    exit 1
   fi
 elif [[ -e $dest ]]; then
   echo "$dest exists but is not a git checkout; move it aside and re-run." >&2
