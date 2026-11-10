@@ -132,8 +132,15 @@ def read_battery(directory):
     behaviour = next((word[1:-1] for word in behaviours.split()
                       if word.startswith("[") and word.endswith("]")), "")
 
+    # Prefer the pack's charge capacities directly. macsmc converts both to
+    # energy using an approximate nominal voltage; that conversion is not
+    # needed for this dimensionless ratio against the original specification.
+    charge_full = read_number(os.path.join(directory, "charge_full"))
+    charge_design = read_number(os.path.join(directory, "charge_full_design"))
     health_percent = None
-    if energy_full is not None and energy_design and energy_design > 0:
+    if charge_full is not None and charge_full >= 0 and charge_design and charge_design > 0:
+        health_percent = charge_full / charge_design * 100.0
+    elif energy_full is not None and energy_full >= 0 and energy_design and energy_design > 0:
         health_percent = energy_full / energy_design * 100.0
 
     cycles = read_int(os.path.join(directory, "cycle_count"))

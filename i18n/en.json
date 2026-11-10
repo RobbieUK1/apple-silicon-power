@@ -18,8 +18,8 @@
   "temperature": "Battery temperature",
   "cycles": "Charge cycles",
   "health": "Battery health",
-  "healthOfNew": "%1% of new",
-  "healthCapacity": "%1 / %2 Wh",
+  "healthOfNew": "%1% of original design",
+  "healthCapacity": "Full %1 Wh / original design %2 Wh",
   "chargeLimit": "Charge limit",
   "limit80": "80% · Longevity",
   "limit100": "100% · Full",
@@ -44,5 +44,6 @@
   "autoDischargeOn": "Discharge above 80% · On",
   "autoDischargeOff": "Discharge above 80% · Off",
   "autoDischargeNote": "While awake and plugged in, excess charge is drained to 80%. Selecting 100% suspends this feature.",
-  "dischargingToLimit": "Running on battery to reach 80%; adapter use resumes at the target."
+  "dischargingToLimit": "Running on battery to reach 80%; adapter use resumes at the target.",
+  "healthBasis": "Full-charge capacity compared with original design capacity (100%). This estimate may differ from macOS."
 }

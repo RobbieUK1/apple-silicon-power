@@ -71,6 +71,27 @@ class BatteryTests(unittest.TestCase):
                    energy_now="35000000", power_now="10000000")
         self.assertEqual(self.read()["timeMinutes"], 30)
 
+    def test_health_uses_original_charge_specification(self):
+        self.write(self.bat, charge_full="6941000", charge_full_design="8694000")
+        expected = 6941000 / 8694000 * 100
+        self.assertAlmostEqual(self.read()["healthPercent"], expected)
+        # Neither today's state of charge nor the selected charging limit
+        # changes the original design reference.
+        self.write(self.bat, capacity="30", charge_control_end_threshold="100")
+        self.assertAlmostEqual(self.read()["healthPercent"], expected)
+
+    def test_health_energy_fallback(self):
+        self.assertAlmostEqual(self.read()["healthPercent"], 50000000 / 60000000 * 100)
+
+    def test_health_above_design_is_not_hidden(self):
+        self.write(self.bat, charge_full="1010000", charge_full_design="1000000")
+        self.assertEqual(self.read()["healthPercent"], 101)
+
+    def test_health_unknown_without_design_capacity(self):
+        (self.bat / "energy_full_design").unlink()
+        self.write(self.bat, charge_full_design="0")
+        self.assertIsNone(self.read()["healthPercent"])
+
     def test_mains_preferred_over_stale_usb(self):
         usb = self.root / "usb"
         usb.mkdir()

@@ -32,7 +32,7 @@ Panel {
   readonly property bool charging: haveData && acOnline && (batteryState === "charging" || batteryState === "pending-charge") && !holding
   readonly property bool full: haveData && (batteryState === "full" || (acOnline && percentage >= 100))
   readonly property bool healthKnown: info.healthPercent !== undefined && info.healthPercent !== null
-  readonly property real healthPercent: healthKnown ? Math.max(0, Math.min(100, Number(info.healthPercent))) : 0
+  readonly property real healthPercent: healthKnown ? Math.max(0, Number(info.healthPercent)) : 0
   readonly property int thresholdEnd: info.thresholdEnd === undefined || info.thresholdEnd === null ? -1 : Number(info.thresholdEnd)
   readonly property int thresholdStart: info.thresholdStart === undefined || info.thresholdStart === null ? -1 : Number(info.thresholdStart)
   readonly property bool thresholdSupported: info.thresholdSupported === true
@@ -530,7 +530,7 @@ Panel {
               height: healthTrack.height
               radius: healthTrack.radius
               color: root.healthColor
-              width: Math.max(0, healthTrack.width * root.healthPercent / 100)
+              width: healthTrack.width * Math.min(100, root.healthPercent) / 100
 
               Behavior on width { NumberAnimation { duration: Style.duration(320); easing.type: Easing.OutCubic } }
             }
@@ -540,6 +540,18 @@ Panel {
             textFormat: Text.PlainText
             visible: text !== ""
             text: root.capacityValue
+            width: parent.width
+            wrapMode: Text.WordWrap
+            color: Qt.darker(root.fg, 1.4)
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.caption
+          }
+
+          Text {
+            textFormat: Text.PlainText
+            text: strings.t("healthBasis")
+            width: parent.width
+            wrapMode: Text.WordWrap
             color: Qt.darker(root.fg, 1.4)
             font.family: root.fontFamily
             font.pixelSize: Style.font.caption

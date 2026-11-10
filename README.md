@@ -24,7 +24,11 @@ Click the bar icon for the full panel:
 - **Battery life** — time left while discharging, or time to the configured
   charge limit while charging.
 - **Battery health compared to new** — full charge capacity as a percentage of
-  the design capacity, plus both figures in Wh.
+  the original design capacity (100%), plus both figures in Wh. Health uses
+  the pack's full-charge mAh divided by its original design mAh, falling back
+  to the energy-capacity ratio if charge capacities are unavailable. It does
+  not use today's charge percentage or the selected charging limit. The Wh
+  figures are the driver's estimates; macOS may report a different health estimate.
 - **Current charge** — percentage in the bar (right-click toggles it) and in
   the panel.
 - **Rate of discharge or charge** — instantaneous watts with a direction arrow.
