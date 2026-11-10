@@ -1,0 +1,12 @@
+#!/bin/sh
+# Release forced discharge before suspend; restart enforcement after resume.
+case "$1" in
+  pre)
+    /usr/bin/systemctl stop apple-silicon-power-guard.service
+    ;;
+  post)
+    if /usr/bin/systemctl is-enabled --quiet apple-silicon-power-guard.service; then
+      /usr/bin/systemctl start apple-silicon-power-guard.service
+    fi
+    ;;
+esac

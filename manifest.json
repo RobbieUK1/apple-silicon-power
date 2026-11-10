@@ -2,12 +2,16 @@
   "schemaVersion": 1,
   "id": "robbie.apple-silicon-power",
   "name": "Apple Silicon Power",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "robbie",
   "license": "MIT",
   "description": "Apple Silicon battery health, charge rate, voltage, cycles, charge limit, and real power profiles",
-  "kinds": ["bar-widget"],
-  "entryPoints": { "barWidget": "Panel.qml" },
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
   "barWidget": {
     "displayName": "Apple Silicon Power",
     "description": "Charge, health against design capacity, rate, voltage, cycles, charge limit and power profile",

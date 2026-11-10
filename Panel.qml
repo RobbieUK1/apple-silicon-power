@@ -165,6 +165,14 @@ Panel {
     thresholdProc.running = true
   }
 
+  function setAutoDischarge(enabled) {
+    if (thresholdBusy || info.guardActive !== true) return
+    thresholdError = ""
+    thresholdProc.completed = false
+    thresholdProc.command = [decodeURIComponent(Qt.resolvedUrl("set-auto-discharge.sh").toString().replace(/^file:\/\//, "")), enabled ? "on" : "off"]
+    thresholdProc.running = true
+  }
+
   function togglePercentage() {
     root.settings = Object.assign({}, root.settings, { showPercentage: !root.showPercentage })
     if (root.bar && root.bar.shell) root.bar.shell.updateEntryInline(root.moduleName, root.settings)
@@ -595,6 +603,40 @@ Panel {
             visible: root.limitNote !== ""
             text: root.limitNote
             color: Qt.darker(root.fg, 1.4)
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.caption
+            wrapMode: Text.WordWrap
+            width: parent.width
+          }
+
+          Text {
+            textFormat: Text.PlainText
+            text: root.info.guardActive === true ? strings.t("guardActive") : root.info.guardInstalled === true ? strings.t("guardInactive") : strings.t("guardSetup")
+            color: root.info.guardActive === true ? Color.accent : root.fg
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.caption
+            wrapMode: Text.WordWrap
+            width: parent.width
+          }
+
+          Button {
+            width: parent.width
+            visible: root.info.guardInstalled === true && root.info.dischargeSupported === true
+            text: root.info.autoDischarge === true ? strings.t("autoDischargeOn") : strings.t("autoDischargeOff")
+            active: root.info.autoDischarge === true
+            enabled: !root.thresholdBusy && root.info.guardActive === true
+            fontSize: Style.font.bodySmall
+            foreground: root.fg
+            fontFamily: root.fontFamily
+            bordered: true
+            onClicked: root.setAutoDischarge(root.info.autoDischarge !== true)
+          }
+
+          Text {
+            textFormat: Text.PlainText
+            visible: root.info.autoDischarge === true && root.thresholdEnd === 80
+            text: root.info.chargeBehaviour === "auto-discharge" ? strings.t("dischargingToLimit") : strings.t("autoDischargeNote")
+            color: root.fg
             font.family: root.fontFamily
             font.pixelSize: Style.font.caption
             wrapMode: Text.WordWrap

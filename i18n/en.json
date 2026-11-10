@@ -26,7 +26,7 @@
   "limitRestart": "Charging restarts at %1%.",
   "limitFullNote": "Charges to 100%.",
   "limitChanging": "Changing charge limit…",
-  "limitFailed": "Could not change the charge limit.",
+  "limitFailed": "Could not change the charging setting.",
   "powerProfile": "Power profile",
   "profilePowerSaver": "Power saver",
   "profileBalanced": "Balanced",
@@ -37,5 +37,12 @@
   "batteryUnavailable": "Battery readings unavailable",
   "batteryAbsent": "No battery detected",
   "profilesUnavailable": "Power profiles unavailable",
-  "profileFailed": "Could not change the power profile."
+  "profileFailed": "Could not change the power profile.",
+  "guardActive": "80% charge guard is running.",
+  "guardInactive": "Charge guard is installed but not running.",
+  "guardSetup": "For active 80% enforcement and optional discharge, run ./install-system.sh in the plugin folder.",
+  "autoDischargeOn": "Discharge above 80% · On",
+  "autoDischargeOff": "Discharge above 80% · Off",
+  "autoDischargeNote": "While awake and plugged in, excess charge is drained to 80%. Selecting 100% suspends this feature.",
+  "dischargingToLimit": "Running on battery to reach 80%; adapter use resumes at the target."
 }

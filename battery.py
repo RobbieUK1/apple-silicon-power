@@ -6,8 +6,30 @@ import glob
 import json
 import os
 import math
+import time
 
 POWER_SUPPLY = os.environ.get("OMARCHY_POWER_SUPPLY_PATH", "/sys/class/power_supply")
+GUARD_HELPER = "/usr/local/lib/apple-silicon-power/charge-guard.py"
+GUARD_CONFIG = "/etc/apple-silicon-power.json"
+GUARD_STATUS = "/run/apple-silicon-power/status.json"
+
+
+def guard_info():
+    try:
+        config = json.loads(read_text(GUARD_CONFIG) or "{}")
+    except ValueError:
+        config = {}
+    try:
+        state = json.loads(read_text(GUARD_STATUS) or "{}")
+        age = time.monotonic() - float(state.get("updated", -100))
+        active = 0 <= age < 20
+    except (ValueError, TypeError, AttributeError):
+        active = False
+    return {
+        "guardInstalled": os.path.isfile(GUARD_HELPER),
+        "guardActive": active,
+        "autoDischarge": isinstance(config, dict) and config.get("autoDischarge") is True,
+    }
 
 
 def read_text(path):
@@ -106,6 +128,9 @@ def read_battery(directory):
     threshold_start = read_int(os.path.join(directory, "charge_control_start_threshold"))
     threshold_end = read_int(os.path.join(directory, "charge_control_end_threshold"))
     threshold_supported = threshold_end is not None
+    behaviours = read_text(os.path.join(directory, "charge_behaviour")) or ""
+    behaviour = next((word[1:-1] for word in behaviours.split()
+                      if word.startswith("[") and word.endswith("]")), "")
 
     health_percent = None
     if energy_full is not None and energy_design and energy_design > 0:
@@ -147,6 +172,9 @@ def read_battery(directory):
         "percentage": percentage,
         "acOnline": on_ac,
         "holding": holding,
+        "chargeBehaviour": behaviour,
+        "dischargeSupported": "auto-discharge" in behaviours.split() or "[auto-discharge]" in behaviours.split(),
+        **guard_info(),
         "energyNowWh": energy_now,
         "energyFullWh": energy_full,
         "energyFullDesignWh": energy_design,

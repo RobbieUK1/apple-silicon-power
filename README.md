@@ -97,6 +97,41 @@ If your Mac charges above 80% after shutdown, this widget cannot prevent it
 through the supported Linux charge-threshold interface. Sleep and shutdown
 are different states; powered-off behaviour needs testing on each firmware.
 
+## Active charge guard and automatic discharge
+
+The firmware threshold can read back as 80% without reliably stopping charging
+on every firmware version. The optional system service enforces the limit
+against the same percentage the widget displays, independently of the shell.
+
+After installing the widget, run from its folder:
+
+```bash
+./install-system.sh
+```
+
+This asks for administrator authentication and installs a root-owned helper,
+a systemd service, and a sleep hook. With the 80% limit selected, it checks every
+five seconds and blocks charging at 80%; normal charging resumes at 75%.
+A small overshoot between readings is possible. It does not guarantee a limit
+while powered off.
+
+The panel then offers **Discharge above 80%**. When enabled on supported Macs,
+the laptop runs from the battery while plugged in until the displayed charge
+reaches 80%, then returns to the adapter with charging inhibited. It uses the
+laptop's normal power consumption, so discharge is gradual. This option starts
+off and remains saved until changed; selecting 100% temporarily suspends it.
+
+Forced discharge is released on unplug, before sleep, when the service stops,
+or when a battery reading fails. The service restarts after resume. If it is
+not running, the panel reports that rather than claiming active enforcement.
+Do not run another tool that writes charging modes alongside this guard.
+
+To stop active enforcement and return control to the firmware:
+
+```bash
+sudo systemctl disable --now apple-silicon-power-guard.service
+```
+
 ## Power profiles on Apple Silicon
 
 The profile picker shows whatever power-profiles-daemon reports for the machine,
